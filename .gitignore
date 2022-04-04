@@ -1,0 +1,8 @@
+poetry.lock
+pyproject.toml
+__pycache__/
+venv/
+data/
+.replit
+replit.nix
+cog/__pycache__

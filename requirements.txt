@@ -1,0 +1,4 @@
+jaconv
+flask
+discord
+discord.ext
