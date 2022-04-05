@@ -95,15 +95,18 @@ class Sumcoin(commands.Cog):
         await ctx.channel.send("読み込み中")
         with open("data/coin.json","r") as f:
             d = json.load(f)
+        d = dict(sorted(d.items(),key=lambda x:x[1]["num"],reverse=True))
         l = []
         l2 = []
         l3 = []
         for i in d.keys():
-            user = await self.bot.fetch_user(int(i))
             l2.append(d[i]["num"])
             l3.append(d[i]["count"])
-            l.append(user.name)
-        await ctx.channel.send("```"+"\n".join(["{} : coin→{},count→{}".format(uid,num,count) for uid,num,count in zip(l,l2,l3)])+"```")
+            l.append(i)
+        await ctx.channel.send(embed=discord.Embed(
+          title="寄付ランキング",
+          description="\n".join(["<@{}>\n寄付額:{}, 記録回数:{}".format(uid,num,count) for uid,num,count in zip(l,l2,l3)])
+        ))
 
 def setup(bot):
     return bot.add_cog(Sumcoin(bot))
