@@ -6,4 +6,3 @@ data/
 .replit
 replit.nix
 cog/__pycache__
-server.py
