@@ -10,6 +10,7 @@ numpy = "^1.22.2"
 discord = "^1.7.3"
 jaconv = "^0.3"
 Flask = "^2.1.1"
+jishaku = "^2.4.0"
 
 [tool.poetry.dev-dependencies]
 
