@@ -46,6 +46,8 @@ class Message(commands.Cog):
         break
     if flag:        
       await ctx.reply("きもしね")
+      if ctx.author.id == self.PENID:
+        await ctx.send("https://cdn.discordapp.com/attachments/891488747638624326/966316611357265971/IMG_2671.jpg")
 
 def setup(bot):
   return bot.add_cog(Message(bot))
