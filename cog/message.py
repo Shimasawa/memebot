@@ -25,6 +25,24 @@ class Message(commands.Cog):
       return
 
     #ペンさんであった場合の処理
+    if ctx.author.id == self.PENID and ctx.content != "ふぅ":
+      with open("data/huu.json") as f:
+        d = json.load(f)
+      if d["recent"] != 0:
+        d["recent"] = 0
+        with open("data/huu.json","w") as f:
+          json.dump(d,f,indent=4)
+      
+    if ctx.author.id == self.PENID and ctx.content == "ふぅ":
+      with open("data/huu.json") as f:
+        d = json.load(f)
+      d["total"] += 1
+      d["recent"] += 1
+      if (d["recent"]%3) == 0:
+        await ctx.reply(f"{d['recent']}コンボ!")
+      with open("data/huu.json","w") as f:
+        json.dump(d,f,indent=4)
+      
     if ctx.author.id == self.PENID and ctx.channel.id not in self.CHLIST:
       with open("data/pen.json","r",encoding="utf-8") as f:
         d = json.load(f)
@@ -34,6 +52,7 @@ class Message(commands.Cog):
           with open("data/pen.json","w") as f:
             json.dump(d,f,indent=4)
           await ctx.reply("数値を追加しました")
+          await ctx.author.edit(nick="おじさんのファン")
           break
 
     #共通の処理
@@ -47,7 +66,7 @@ class Message(commands.Cog):
     if flag:        
       await ctx.reply("きもしね")
       if ctx.author.id == self.PENID:
-        await ctx.send("https://cdn.discordapp.com/attachments/891488747638624326/966316611357265971/IMG_2671.jpg")
+        await ctx.author.edit(nick="おじさんのファン")
 
 def setup(bot):
   return bot.add_cog(Message(bot))

@@ -5,6 +5,7 @@ import json
 import random
 
 from os import environ
+from time import time
 
 class Pensan(commands.Cog):
     def __init__(self,bot):
@@ -15,6 +16,45 @@ class Pensan(commands.Cog):
                        int(environ["NSFWID"]),
                        int(environ["ONEESANID"])]
     
+    @commands.command()
+    async def huu(self,ctx,mode):
+        """ふぅTA(start,end)"""
+        if ctx.author.id not in [self.ADMIN,self.PENID]:
+            return
+        if ctx.channel.id != int(environ["NSFWID"]):
+            return
+        with open("data/time.json","r") as f:
+            d = json.load(f)
+        if mode == "start":
+            if d["is_start"]:
+                await ctx.send("既に計測中です")
+                return
+            else:
+                d["time"] = time()
+                d["is_start"] = True
+                with open("data/time.json","w") as f:
+                    json.dump(d,f,indent=4)
+                await ctx.send("スタートしました")
+        elif mode == "end":
+            if d["is_start"]:
+                t = time()-d["time"]
+                await ctx.send(f"タイム : {t}秒")
+                d["is_start"] = False
+                with open("data/time.json","w") as f:
+                    json.dump(d,f,indent=4)
+            else:
+                await ctx.send("開始していません")
+                return
+        else:
+            await ctx.send("引数はstart,endです")
+            return
+    
+    @commands.command()
+    async def saranuki(self,ctx):
+        with open("data/huu.json") as f:
+            d = json.load(f)
+        await ctx.send(f"現在{d['recent']}コンボ中！合計{d['total']}回")
+
     @commands.command()
     async def penword(self,ctx,mode,ward,fine_type,amount):
         """ポイントを追加する文字列リストを編集します"""

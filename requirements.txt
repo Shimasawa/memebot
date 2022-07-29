@@ -1,4 +1,5 @@
 jaconv
 flask
+jishaku
 discord
 discord.ext
