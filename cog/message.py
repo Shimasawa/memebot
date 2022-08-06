@@ -40,6 +40,7 @@ class Message(commands.Cog):
       d["recent"] += 1
       if (d["recent"]%3) == 0:
         await ctx.reply(f"{d['recent']}コンボ!")
+        await ctx.author.edit(nick="おじさんのファン")
       with open("data/huu.json","w") as f:
         json.dump(d,f,indent=4)
       

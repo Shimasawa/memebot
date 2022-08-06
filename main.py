@@ -9,9 +9,10 @@ from dotenv import load_dotenv
 intents = discord.Intents.default()
 
 load_dotenv()
-token = environ['TOKEN_KUROKAGE']
+TOKEN = environ['TOKEN_KUROKAGE']
+PREFIX = environ["PREFIX"]
 
-bot = commands.Bot(command_prefix="k!", intents=intents)
+bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 cogs = [cog[:-3] for cog in listdir("cog") if cog.endswith(".py")]
 
 bot.load_extension("jishaku")
@@ -19,4 +20,4 @@ bot.load_extension("jishaku")
 for cog in cogs:
     bot.load_extension(f"cog.{cog}")
 
-bot.run(token)
+bot.run(TOKEN)
