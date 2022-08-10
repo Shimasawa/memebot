@@ -11,6 +11,7 @@ class Pin(commands.Cog):
     
     @commands.command()
     async def pin(self,ctx,desc=None):
+        """管理者専用"""
         if ctx.author.id != self.ADMINID:
             await ctx.reply("あなたにはこのコマンドを実行する権限がありません")
             return
