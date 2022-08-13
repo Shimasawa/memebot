@@ -13,50 +13,70 @@ from module import decorater
 class Pin(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
-        self.ADMINID = int(environ["ADMINID"])
-    
+        self.PREFIX = environ["PREFIX"]
 
     @commands.command()
     @commands.check(decorater.is_admin)
     async def pin(self,ctx,desc=None):
-        db = await aiosqlite.connect("data/main.db")
-        cursor = await db.cursor()
-        if desc == None:
-            await cursor.execute("delete from 強制ピン止め where チャンネルid = ?",[ctx.channel.id])
-        else:
-            await cursor.execute("select count(*) from 強制ピン止め where チャンネルid = ?",[ctx.channel.id])
-            count = await cursor.fetchone()
-            if count[0] == 0:
-                await cursor.execute("insert into 強制ピン止め values(?,?,?,?)",[ctx.channel.id,time(),desc,None])
-            else:
-                await cursor.execute("update 強制ピン止め set 前回実行 = ?,内容 = ?,前回メッセージ where チャンネルid = ?",[time(),desc,ctx.channel.id,None])
-        await db.commit()
-        await cursor.close()
-        await db.close()
-        await ctx.channel.send("変更が完了しました")
+        async with aiosqlite.connect("data/main.db") as db:
+            async with db.cursor() as cursor:
+                #ピンを削除する場合
+                if desc == None:
+                    await cursor.execute(
+                        "delete from 強制ピン止め where チャンネルid = ?",
+                        [ctx.channel.id]
+                        )
+                #ピンを追加する場合
+                else:
+                    await cursor.execute(
+                        "select count(*) from 強制ピン止め where チャンネルid = ?",
+                        [ctx.channel.id]
+                        )
+                    count = await cursor.fetchone()
+                    #ピンが無かった場合
+                    if count[0] == 0:
+                        await cursor.execute(
+                            "insert into 強制ピン止め values(?,?,?,?)",
+                            [ctx.channel.id,time(),desc,None]
+                            )
+                    #ピンが既にあった場合
+                    else:
+                        await cursor.execute(
+                            "update 強制ピン止め set 前回実行 = ?,内容 = ?,前回メッセージ = ? where チャンネルid = ?",
+                            [time(),desc,None,ctx.channel.id]
+                            )
+                await db.commit()
+                await ctx.channel.send("変更が完了しました")
     
     @commands.Cog.listener()
     async def on_message(self,ctx):
-        if ctx.author.bot:
+        if ctx.author.bot or ctx.content.startswith(self.PREFIX+"pin"):
             return
-        db = await aiosqlite.connect("data/main.db")
-        cursor = await db.cursor()
-        raw = await cursor.execute("select 前回実行,内容,前回メッセージ from 強制ピン止め where チャンネルid = ?",[ctx.channel.id])
-        raw = await raw.fetchone()
-        if raw == None:
-            return
-        if (time()-raw[0]) > 10:
-            if raw[2] != None:
-                try:
-                    past_msg = await ctx.channel.fetch_message(raw[2])
-                    await past_msg.delete()
-                except:
-                    pass
-            msg = await ctx.channel.send(raw[1])
-            await cursor.execute("update 強制ピン止め set 前回実行 = ?,前回メッセージ = ? where チャンネルid = ?",[time(),msg.id,ctx.channel.id])
-            await db.commit()
-        await cursor.close()
-        await db.close()
+        async with aiosqlite.connect("data/main.db") as db:
+            async with db.cursor() as cursor:
+                raw = await cursor.execute(
+                    "select 前回実行,内容,前回メッセージ from 強制ピン止め where チャンネルid = ?",
+                    [ctx.channel.id]
+                    )
+                raw = await raw.fetchone()
+                #ピンが無かった場合
+                if raw == None:
+                    return
+                #前回のピンを送信してから十秒経過していた場合
+                if (time()-raw[0]) > 10:
+                    if raw[2] != None:
+                        #前回のメッセージを取得できた場合、できなかった場合
+                        try:
+                            past_msg = await ctx.channel.fetch_message(raw[2])
+                            await past_msg.delete()
+                        except:
+                            pass
+                    msg = await ctx.channel.send(raw[1])
+                    await cursor.execute(
+                        "update 強制ピン止め set 前回実行 = ?,前回メッセージ = ? where チャンネルid = ?",
+                        [time(),msg.id,ctx.channel.id]
+                        )
+                    await db.commit()
             
 
 def setup(bot):
