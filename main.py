@@ -20,4 +20,8 @@ bot.load_extension("jishaku")
 for cog in cogs:
     bot.load_extension(f"cog.{cog}")
 
+@bot.check
+def is_not_bot(ctx: commands.Context):
+    return not ctx.author.bot
+
 bot.run(TOKEN)
