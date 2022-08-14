@@ -3,10 +3,8 @@ from discord.ext import commands
 
 import aiosqlite
 
-import json
 from os import environ
 from time import time
-from asyncio import sleep
 
 from module import decorater
 
@@ -14,6 +12,7 @@ class Pin(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
         self.PREFIX = environ["PREFIX"]
+        self.COOLDOWN = 10
 
     @commands.command()
     @commands.check(decorater.is_admin)
@@ -48,9 +47,10 @@ class Pin(commands.Cog):
                 await db.commit()
                 await ctx.channel.send("変更が完了しました")
     
+    
     @commands.Cog.listener()
     async def on_message(self,ctx):
-        if ctx.author.bot or ctx.content.startswith(self.PREFIX+"pin"):
+        if ctx.author.bot or ctx.content.startswith(self.PREFIX):
             return
         async with aiosqlite.connect("data/main.db") as db:
             async with db.cursor() as cursor:
@@ -63,7 +63,7 @@ class Pin(commands.Cog):
                 if raw == None:
                     return
                 #前回のピンを送信してから十秒経過していた場合
-                if (time()-raw[0]) > 10:
+                if (time()-raw[0]) > self.COOLDOWN:
                     if raw[2] != None:
                         #前回のメッセージを取得できた場合、できなかった場合
                         try:
