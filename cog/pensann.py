@@ -4,6 +4,8 @@ from discord.ext import commands
 import json
 import random
 
+import aiosqlite
+
 from os import environ
 from time import time
 
@@ -17,7 +19,7 @@ class Pensan(commands.Cog):
                        int(environ["ONEESANID"])]
     
     @commands.command()
-    async def huu(self,ctx,mode):
+    async def old_huu(self,ctx,mode):
         """ふぅTA(start,end)"""
         if ctx.author.id not in [self.ADMIN,self.PENID]:
             return
