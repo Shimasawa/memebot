@@ -6,7 +6,7 @@ import aiosqlite
 from os import environ
 from time import time
 
-from module import decorater
+from module import confirm
 
 class Pin(commands.Cog):
     def __init__(self,bot):
@@ -15,7 +15,7 @@ class Pin(commands.Cog):
         self.COOLDOWN = 10
 
     @commands.command()
-    @commands.check(decorater.is_admin)
+    @commands.check(confirm.is_admin)
     async def pin(self,ctx,desc=None):
         async with aiosqlite.connect("data/main.db") as db:
             async with db.cursor() as cursor:
