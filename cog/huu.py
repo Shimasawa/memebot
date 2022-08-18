@@ -15,6 +15,15 @@ class Huu(commands.Cog):
     
     @commands.command()
     async def huu(self,ctx,mode=None):
+        #選択肢以外の場合
+        if mode not in [None,"log","del"]:
+            await ctx.channel.send(embed=discord.Embed(
+                title="存在しない引数",
+                description="`huu`->計測の開始&終了\n`huu log`->記録の表示\n`huu del`->記録の削除"
+            ))
+            return
+
+            
         async with aiosqlite.connect("data/main.db") as db:
             async with db.cursor() as cursor:
                 await cursor.execute("select * from ふぅ計測 where ユーザーid = ?",[ctx.author.id])
@@ -86,14 +95,6 @@ class Huu(commands.Cog):
                     await cursor.execute("delete from ふぅ計測 where ユーザーid = ?",[ctx.author.id])
                     await db.commit()
                     await ctx.channel.send("データを削除しました")
-                
-                
-                #選択肢以外の場合
-                else:
-                    await ctx.channel.send(embed=discord.Embed(
-                        title="存在しない引数",
-                        description="`huu`->計測の開始&終了\n`huu log`->記録の表示\n`huu del`->記録の削除"
-                    ))
 
 def setup(bot):
     return bot.add_cog(Huu(bot))
