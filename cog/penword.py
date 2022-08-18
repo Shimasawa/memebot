@@ -3,7 +3,7 @@ from discord.ext import commands
 
 import aiosqlite
 
-from module.decorater import is_admin
+from module.confirm import is_admin,is_ignore_ch,is_pen
 
 class PenWord(commands.Cog):
     def __init__(self,bot):
@@ -42,7 +42,7 @@ class PenWord(commands.Cog):
                     else:
                         await cursor.execute("insert into ペン言語 values(?,0)",[word])
                         await db.commit()
-                        await ctx.channe.send("新規登録しました")
+                        await ctx.channel.send("新規登録しました")
                 
 
                 elif mode == "del":
@@ -55,6 +55,25 @@ class PenWord(commands.Cog):
                         await ctx.channel.send("削除しました")
                     
                 return
+
+    @commands.Cog.listener()
+    async def on_message(self,ctx: discord.Message):
+        if is_ignore_ch(ctx.channel.id) or ctx.author.bot or not is_pen(ctx):
+            return
+        
+        async with aiosqlite.connect("data/main.db") as db:
+            async with db.cursor() as cursor:
+                await cursor.execute("select * from ペン言語")
+                async for word in cursor:
+                    if word[0] in ctx.content:
+                        if ((word[1]+1)%10) == 0:
+                            await ctx.author.edit(nick="おじさんのファン")
+                        await cursor.execute(
+                            "update ペン言語 set カウント = ? where 単語 = ?",
+                            [word[1]+1,word[0]]
+                        )
+                        await db.commit()
+
 
 def setup(bot):
     return bot.add_cog(PenWord(bot))
