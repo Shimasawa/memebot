@@ -22,7 +22,6 @@ class Pensan(commands.Cog):
             async with db.cursor() as cursor:
                 await cursor.execute("select * from おねえさん画像集")
                 msg_id = choice([i async for i in cursor])[0]
-                print(msg_id)
                 try:
                     msg: discord.Message = await ctx.channel.fetch_message(msg_id)
                     img = choice(msg.attachments)
