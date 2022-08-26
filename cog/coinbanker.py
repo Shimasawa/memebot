@@ -1,65 +1,58 @@
 import discord
 from discord.ext import commands
 
+import aiosqlite
+
 import re
 import json
 from os import environ
 
-class Sumcoin(commands.Cog):
+from module import confirm
+
+class CoinBanker(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
         self.ADMIN = int(environ["ADMINID"])
+        self.PREFIX = environ["PREFIX"]
     
     @commands.command()
-    async def cal_ch_num(self,ctx,message_id,limit_num):
-        
-        if int(ctx.author.id) != self.ADMIN:
-            await ctx.channel.send("管理者以外の実行")
-            return
-
+    @commands.check(confirm.is_admin)
+    async def sumcoin(self,ctx,triger_message: discord.Message):
         await ctx.channel.send("読み込み中")
-        
-        l = []
-        
-        async for message in ctx.channel.history(limit=int(limit_num)+2):
-
-            l.append(message)
-            
-            if message.id == int(message_id):
-                break
-        
-        if len(l) == int(limit_num):
-            await ctx.channel.send("メッセージを取得できませんでした。\n__取得したメッセージのリスト__")
-            await ctx.channel.send("\n".join([m.content for m in l]))
-            return
-
-        await ctx.channel.send(f"{len(l)}件のメッセージを取得しました")
-
-        with open("data/coin.json","r") as f:
-            d = json.load(f)
-        
-        for i in l:
-                        
-            if "k!" in i.content or i.author.bot:
-                continue
-            num = re.search(r"[0-9]+",i.content)
-            if num == None:
-                continue
-
-            if str(i.author.id) not in d.keys():
-                d[str(i.author.id)] = {
-                    "num":0,
-                    "count":0
-                }
-            d[str(i.author.id)]["num"] += int(num.group())
-            d[str(i.author.id)]["count"] += 1
-        with open("data/coin.json","w") as f:
-            json.dump(d,f,indent=2)
-        await ctx.channel.send("処理を終了しました")
         try:
-            await ctx.channel.send("__取得したメッセージリスト__\n```{}```".format("\n".join([m.content for m in l])))
+            message_list = [message async for message in ctx.channel.history(limit=None,after=triger_message)]
         except:
-            await ctx.channel.send("取得した中で最も古いメッセージ\n{}".format(l[-1].content))
+            await ctx.channel.send("メッセージの取得に失敗しました")
+            return
+        
+        await ctx.channel.send(f"{len(message_list)}件のメッセージを取得しました。\n記録を開始します")
+        
+        for msg in message_list:
+            
+            msg: discord.Message
+
+            if msg.content.startswith(self.PREFIX) or msg.author.bot:
+                continue
+
+            coin = re.search(r"[0-9]+",msg.content)
+            if coin is None:
+                continue
+            
+            coin = int(coin.group())
+            async with aiosqlite.connect("data/main.db") as db:
+                async with db.cursor() as cursor:
+                    await cursor.execute("select * from クラコ集計 where ユーザーid = ?",[msg.author.id])
+                    raw = await cursor.fetchone()
+                    if raw is None:
+                        raw = [msg.author.id,0,0]
+                        await cursor.execute("insert into クラコ集計 values(?,?,?)",raw)
+                        await db.commit()
+                    await cursor.execute(
+                        "update クラコ集計 set 総額 = ?,記録回数 = ? where ユーザーid = ?",
+                        [raw[1]+coin,raw[2]+1,msg.author.id]
+                    )
+                    await db.commit()
+        await ctx.channel.send("記録を終了しました")
     
     @commands.command()    
     async def set_num(self,ctx,user_id,num):
@@ -109,4 +102,4 @@ class Sumcoin(commands.Cog):
         ))
 
 def setup(bot):
-    return bot.add_cog(Sumcoin(bot))
+    return bot.add_cog(CoinBanker(bot))
