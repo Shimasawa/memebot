@@ -17,8 +17,10 @@ class CoinBanker(commands.Cog):
     
     @commands.command()
     @commands.check(confirm.is_admin)
+    @commands.check(confirm.is_coin_log_ch)
     async def sumcoin(self,ctx,triger_message: discord.Message):
         await ctx.channel.send("読み込み中")
+        #メッセージ取得
         try:
             message_list = [message async for message in ctx.channel.history(limit=None,after=triger_message)]
         except:
@@ -34,10 +36,11 @@ class CoinBanker(commands.Cog):
             if msg.content.startswith(self.PREFIX) or msg.author.bot:
                 continue
 
+            #数字探索
             coin = re.search(r"[0-9]+",msg.content)
             if coin is None:
                 continue
-            
+            #追加
             coin = int(coin.group())
             async with aiosqlite.connect("data/main.db") as db:
                 async with db.cursor() as cursor:
@@ -54,52 +57,39 @@ class CoinBanker(commands.Cog):
                     await db.commit()
         await ctx.channel.send("記録を終了しました")
     
-    @commands.command()    
-    async def set_num(self,ctx,user_id,num):
-        if int(ctx.author.id) != self.ADMIN:
-            await ctx.channel.send("管理者以外の実行")
-            return
-
-        with open("data/coin.json","r") as f:
-            d = json.load(f)
-        d[str(user_id)]["num"] = int(num)
-        with open("data/coin.json","w") as f:
-            json.dump(d,f,indent=2)
-        await ctx.channel.send("設定しました")
+    @commands.command()
+    async def users_coin(self,ctx,target: discord.User):
+        async with aiosqlite.connect("data/main.db") as db:
+            async with db.cursor() as cursor:
+                await cursor.execute("select 総額,記録回数 from クラコ集計 where ユーザーid = ?",[target.id])
+                raw = await cursor.fetchone()
+                if raw is None:
+                    await ctx.channel.send("データが存在しません")
+                    return
+                else:
+                    await ctx.channel.send(embed=discord.Embed(
+                        title=f"{target.display_name}の記録",
+                        description=f"総額 : {raw[0]}\n記録回数 : {raw[1]}"
+                    ))
     
     @commands.command()
-    async def look_num(self,ctx,user_id=None):
-        if int(ctx.author.id) != self.ADMIN:
-            await ctx.channel.send("管理者以外の実行")
-            return
-        with open("data/coin.json","r") as f:
-            d = json.load(f)
-        
-        if user_id == None:
-            await ctx.channel.send("```json\n{}```".format(str(d)))
-        else:
-            await ctx.channel.send(str(d[str(user_id)]["num"]))
-    
-    @commands.command()
-    async def name_list(self,ctx):
-        if int(ctx.author.id) != self.ADMIN:
-            await ctx.channel.send("管理者以外の実行")
-            return
-        await ctx.channel.send("読み込み中")
-        with open("data/coin.json","r") as f:
-            d = json.load(f)
-        d = dict(sorted(d.items(),key=lambda x:x[1]["num"],reverse=True))
-        l = []
-        l2 = []
-        l3 = []
-        for i in d.keys():
-            l2.append(d[i]["num"])
-            l3.append(d[i]["count"])
-            l.append(i)
-        await ctx.channel.send(embed=discord.Embed(
-          title="寄付ランキング",
-          description="\n".join(["<@{}>\n寄付額:{}, 記録回数:{}".format(uid,num,count) for uid,num,count in zip(l,l2,l3)])
-        ))
+    async def coinrank(self,ctx):
+        async with aiosqlite.connect("data/main.db") as db:
+            async with db.cursor() as cursor:
+                await cursor.execute("select * from クラコ集計 order by 総額 desc")
+                str_raw = []
+                count = 1
+                async for data in cursor:
+                    try:
+                        user = await self.bot.fetch_user(data[0])
+                        str_raw.append(f"{count}位.{user.display_name}\n総額: {data[1]}, 記録回数: {data[2]}")
+                        count += 1
+                    except:
+                        pass
+                await ctx.channel.send(embed=discord.Embed(
+                    title="クランコイン寄付ランキング",
+                    description="\n".join(str_raw)
+                ))
 
 def setup(bot):
     return bot.add_cog(CoinBanker(bot))

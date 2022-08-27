@@ -8,6 +8,7 @@ IGNORE_CHANNE_ID = [
     int(environ["NSFWID"]),
     int(environ["ONEESANID"])
 ]
+COIN_LOG_CH_ID = int(environ["COIN_LOG_CH_ID"])
 PREFIX = environ["PREFIX"]
 
 def is_admin(ctx: commands.Context):
@@ -21,3 +22,6 @@ def is_ignore_ch(channel_id: int):
 
 def is_pen(ctx: commands.Context):
     return ctx.author.id == PENID
+
+def is_coin_log_ch(ctx: commands.Context):
+    return ctx.channel.id == COIN_LOG_CH_ID
